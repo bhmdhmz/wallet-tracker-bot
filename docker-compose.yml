@@ -1,0 +1,10 @@
+services:
+  tracker:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - tracker-state:/data   # survives restarts and image rebuilds
+
+volumes:
+  tracker-state:

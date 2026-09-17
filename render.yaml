@@ -1,0 +1,42 @@
+# Render Blueprint. Import this repo at https://dashboard.render.com/blueprints
+#
+# Option A (default below): a WEB SERVICE, which has a free instance type.
+#   It sleeps after 15 minutes with no inbound traffic, so point an external
+#   pinger (cron-job.org, UptimeRobot) at https://<your-app>.onrender.com/healthz
+#   every 10 minutes to keep it awake.
+#
+# Option B: a BACKGROUND WORKER — always on, no pinger, no health endpoint
+#   needed, but there is no free worker instance type ($7/month minimum).
+#   Swap `type: web` for `type: worker` and delete the healthCheckPath line.
+
+services:
+  - type: web
+    name: wallet-tracker
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: POLL_INTERVAL_SECONDS
+        value: "30"
+      - key: MIN_USD_VALUE
+        value: "0"
+      # Ephemeral disk: keep state out of the repo checkout path.
+      - key: STATE_FILE
+        value: /tmp/state.json
+      # Wallets as JSON, so no addresses live in the repo.
+      # [{"label":"Whale","chain":"ethereum","address":"0x..."}]
+      - key: WALLETS_JSON
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: ETHERSCAN_API_KEY
+        sync: false
+      - key: SOLANA_RPC_URL
+        sync: false

@@ -1,0 +1,23 @@
+# How often to check every wallet, in seconds.
+# With a free Etherscan key, keep this at 20s or more.
+poll_interval_seconds: 30
+
+# Ignore trades smaller than this USD value (0 = notify everything).
+min_usd_value: 0
+
+state_file: state.json
+
+# Supported chains: ethereum, base, arbitrum, optimism, bsc, polygon,
+# avalanche, solana
+wallets:
+  - label: "Whale ETH"
+    chain: ethereum
+    address: "0x0000000000000000000000000000000000000000"
+
+  - label: "Base degen"
+    chain: base
+    address: "0x0000000000000000000000000000000000000000"
+
+  - label: "SOL trader"
+    chain: solana
+    address: "So11111111111111111111111111111111111111112"
