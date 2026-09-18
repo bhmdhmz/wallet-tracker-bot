@@ -87,17 +87,24 @@ def build_message(
     return "\n".join(lines)
 
 
-async def send_message(client: httpx.AsyncClient, token: str, chat_id: str, text: str) -> bool:
+async def send_message(
+    client: httpx.AsyncClient,
+    token: str,
+    chat_id: str,
+    text: str,
+    reply_markup: dict | None = None,
+) -> bool:
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     try:
         r = await client.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-            },
-            timeout=20,
+            f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=20
         )
         if r.status_code != 200:
             log.error("Telegram rejected the message: %s", r.text[:300])
@@ -106,3 +113,74 @@ async def send_message(client: httpx.AsyncClient, token: str, chat_id: str, text
     except httpx.HTTPError as exc:
         log.error("Telegram request failed: %s", exc)
         return False
+
+
+async def edit_message(
+    client: httpx.AsyncClient,
+    token: str,
+    chat_id: str,
+    message_id: int,
+    text: str,
+    reply_markup: dict | None = None,
+) -> bool:
+    payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "parse_mode": "HTML"}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+    try:
+        r = await client.post(
+            f"https://api.telegram.org/bot{token}/editMessageText", json=payload, timeout=20
+        )
+        if r.status_code != 200:
+            log.warning("editMessageText failed: %s", r.text[:300])
+            return False
+        return True
+    except httpx.HTTPError as exc:
+        log.warning("editMessageText error: %s", exc)
+        return False
+
+
+async def answer_callback(
+    client: httpx.AsyncClient, token: str, callback_id: str, text: str | None = None
+) -> None:
+    payload = {"callback_query_id": callback_id}
+    if text:
+        payload["text"] = text
+    try:
+        await client.post(
+            f"https://api.telegram.org/bot{token}/answerCallbackQuery", json=payload, timeout=15
+        )
+    except httpx.HTTPError as exc:
+        log.debug("answerCallbackQuery failed: %s", exc)
+
+
+async def get_updates(
+    client: httpx.AsyncClient, token: str, offset: int, timeout: int = 25
+) -> list[dict]:
+    """Long-poll for new messages / button taps since `offset`."""
+    r = await client.get(
+        f"https://api.telegram.org/bot{token}/getUpdates",
+        params={
+            "offset": offset,
+            "timeout": timeout,
+            "allowed_updates": '["message","callback_query"]',
+        },
+        timeout=timeout + 10,
+    )
+    r.raise_for_status()
+    data = r.json()
+    return data.get("result", []) if data.get("ok") else []
+
+
+def build_alert_keyboard(wallet_key: str, chain_name: str, token_address: str | None) -> dict:
+    """Buttons attached to each trade alert: quick-mute plus a chart link."""
+    buttons = [{"text": "🔇 Mute this wallet", "callback_data": f"muteone:{wallet_key}"}]
+    if token_address:
+        chain = get_chain(chain_name)
+        if chain.dexscreener_slug:
+            buttons.append(
+                {
+                    "text": "📈 Chart",
+                    "url": f"https://dexscreener.com/{chain.dexscreener_slug}/{token_address}",
+                }
+            )
+    return {"inline_keyboard": [buttons]}

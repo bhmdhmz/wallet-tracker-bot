@@ -43,6 +43,30 @@ cp .env.example .env        # fill in your token, chat id, API key
 python main.py
 ```
 
+## Using it from Telegram
+
+The bot is two-way — it listens for commands in the same chat it alerts in
+(only that chat; anyone else's messages to the bot are ignored):
+
+| Command | Does |
+|---|---|
+| `/menu` or `/start` | Shows a button menu: List wallets, Add wallet, Help |
+| `/list` | Shows tracked wallets, each with a Mute/Unmute and Remove button |
+| `/add <chain> <address> [label]` | Starts tracking a wallet, e.g. `/add base 0xAbc... MyWhale` |
+| `/help` | Shows this list |
+
+Every **BUY/SELL** alert also carries its own **🔇 Mute this wallet** and
+**📈 Chart** buttons — no need to go to `/list` to quiet a noisy wallet.
+
+Only BUY and SELL trigger a message. Plain sends/receives and token-for-token
+swaps are still tracked internally (so polling state stays correct) but never
+notify — mute doesn't change that, it only silences the trades themselves.
+
+Wallets added or muted via the bot are saved back to `state.json` and take
+over from whatever `WALLETS_JSON` or `config.yaml` originally seeded — a
+redeploy with the old config won't undo changes you made from the chat. See
+DEPLOY.md for which platforms keep that file across restarts and which don't.
+
 ## Configuration
 
 `config.yaml`:
@@ -114,9 +138,6 @@ journalctl -u wallet-tracker -f
   EVM, Helius webhooks on Solana. Your server gets pushed the transaction within
   a block or two instead of waiting for the next poll. The parsing and
   formatting code here carries over unchanged.
-- **Bot commands:** add a `getUpdates` listener to support `/add <chain> <addr>`,
-  `/remove`, and `/list` so you can manage wallets from Telegram instead of
-  editing `config.yaml`.
 - **Per-wallet filters:** `min_usd_value` per entry, or an ignore-list of tokens.
 - **More context:** append the token's market cap, liquidity and pair age from
   the Dexscreener response already being fetched in `tracker/prices.py`.

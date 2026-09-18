@@ -55,7 +55,11 @@ Two things to handle on the free plan:
    also reports uptime, last poll time and alerts sent.
 2. **The filesystem is ephemeral.** `STATE_FILE` is set to `/tmp/state.json`;
    on restart the tracker resumes from the current chain head. You won't get
-   duplicate alerts, but you may miss trades that happened while it was down.
+   duplicate alerts, but you may miss trades that happened while it was down
+   — and any wallet you added or muted from Telegram since the last deploy is
+   gone too, since it only lived in that wiped file. If you're actively
+   managing wallets from the chat, Oracle Cloud's real disk (Option 2) or a
+   paid Render instance with a persistent disk add-on avoids this.
 
 For an always-on setup, edit `render.yaml`: change `type: web` to
 `type: worker`, drop the `healthCheckPath` line, and set `plan: starter`

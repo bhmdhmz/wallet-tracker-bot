@@ -1,4 +1,11 @@
-"""Tiny JSON-backed store so restarts don't re-notify old transactions."""
+"""Tiny JSON-backed store.
+
+Each wallet's entry (identity + mute flag + polling progress) lives under a
+single "chain:address" key, so tracker/registry.py can manage wallets and
+tracker/{evm,solana}.py can track polling progress through the same object
+without a second data structure to keep in sync. "telegram_offset" is the
+one non-wallet key at the top level.
+"""
 
 from __future__ import annotations
 
